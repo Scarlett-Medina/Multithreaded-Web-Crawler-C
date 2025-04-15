@@ -28,9 +28,10 @@ Scarlett – Thread Management & Input Handling
 ## Install Required Packages
 
 (I am using Visual Studio Code with the WSL extension to work on the project inside the Ubuntu environment) -Scar
-sudo apt update
-sudo apt install build-essential make
-sudo apt install dos2unix
+
+- sudo apt update
+- sudo apt install build-essential make
+- sudo apt install dos2unix
 
 ## How to Run
 

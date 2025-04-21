@@ -11,7 +11,7 @@ const char wordCounter(const char filepath[]);
 
 int main()
 {
-
+    //file path of folder holding page1,page2, etc in as parameter.
     wordCounter("/home/seed/Desktop/HTMLfolder");
     return 0;
 }

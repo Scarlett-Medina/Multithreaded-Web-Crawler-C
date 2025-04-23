@@ -52,8 +52,10 @@ typedef struct
 void read_urls(const char* filename) 
 {
     FILE* file = fopen(filename, "r");
+    
+    // Error Handling: If urls.txt doesn't exist
     if (!file) {
-        perror("Error opening urls.txt");
+        perror("[ERROR] Could not open urls.txt");
         exit(EXIT_FAILURE);
     }
 
@@ -65,11 +67,18 @@ void read_urls(const char* filename)
             urls[url_count] = my_strdup(buffer);
             url_count++;
         } else {
-            printf("[Warning] Skipped invalid URL: %s\n", buffer);
+            // Logging: Warning when URL is invalid
+            printf("[WARNING] Skipped invalid URL: %s\n", buffer);
         }
     }
 
     fclose(file);
+
+    // Error Handling: No valid URLs in file
+    if (url_count == 0) {
+        fprintf(stderr, "[ERROR] No valid URLs found in urls.txt\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*
@@ -79,10 +88,15 @@ void read_urls(const char* filename)
 void* thread_worker(void* arg) 
 {
     ThreadArg* data = (ThreadArg*)arg;
-    printf("[Thread %d] Handling URL: %s\n", data->index, data->url);
+
+    // Logging: Show which thread is starting and what URL it's working on
+    printf("[INFO] Thread %d: Handling URL: %s\n", data->index, data->url);
 
     // Placeholder for teammate's HTML fetching function(Just a example)
     // Example: fetch_html(data->url, data->index);
+
+    // Logging: Thread is done
+    printf("[INFO] Thread %d: Finished processing.\n", data->index);
 
     free(data->url);
     free(data);
@@ -97,6 +111,9 @@ void* thread_worker(void* arg)
  */
 int main() 
 {
+    // Logging: Indicate program started
+    printf("[INFO] Web Crawler started.\n");
+
     read_urls("urls.txt");
 
     pthread_t threads[MAX_URLS];
@@ -104,18 +121,22 @@ int main()
     for (int i = 0; i < url_count; i++) 
     {
         ThreadArg* arg = malloc(sizeof(ThreadArg));
+        
+        // Error Handling: Memory allocation failure
         if (!arg) {
-            perror("Failed to allocate memory for thread arg");
+            perror("[ERROR] Failed to allocate memory for thread argument");
             exit(EXIT_FAILURE);
         }
+
         arg->url = my_strdup(urls[i]);  // Pass a safe copy of the URL
         arg->index = i + 1;             // Index used to name output files
 
-
         int rc = pthread_create(&threads[i], NULL, thread_worker, arg);
+
+        // Error Handling: Failed to create thread
         if (rc) 
         {
-            fprintf(stderr, "Error creating thread %d\n", i);
+            fprintf(stderr, "[ERROR] Failed to create thread %d\n", i + 1);
             free(arg->url);
             free(arg);
         }
@@ -132,6 +153,9 @@ int main()
     {
         free(urls[i]);
     }
+
+    // Logging: Crawler finished
+    printf("[INFO] Web Crawler finished. All threads completed.\n");
 
     return 0;
 }

@@ -13,7 +13,15 @@ Scarlett – Thread Management & Input Handling
 - Passes each thread the assigned URL and index
 - Logs which thread handles which URL
 
-.
+Wenhao - Error Handling, Logging & Build System
+
+- Adds error handling for file access, memory allocation, and thread creation
+- Checks if urls.txt exists and prints an error if it cannot be opened
+- Verifies that at least one valid URL is loaded before starting threads
+- Uses perror() and fprintf(stderr, ...) to report runtime issues
+- Logs when the crawler starts and finishes, and when each thread begins and ends
+- Adds [INFO], [WARNING], and [ERROR] tags to log messages for clarity
+
 .
 .
 

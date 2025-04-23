@@ -22,8 +22,11 @@ Wenhao - Error Handling, Logging & Build System
 - Logs when the crawler starts and finishes, and when each thread begins and ends
 - Adds [INFO], [WARNING], and [ERROR] tags to log messages for clarity
 
-.
-.
+Lucia - HTML Fetching & Storage
+- Integrate **libcurl** to perform concurrent HTTP GET requests.  
+- Write each page’s HTML into a uniquely named file: `page<index>.html`.  
+- Implement a `write_data` callback to stream downloads directly to disk.  
+- Log success (`[INFO]`) or failure (`[ERROR]`) for each download.
 
 ## Project Files
 

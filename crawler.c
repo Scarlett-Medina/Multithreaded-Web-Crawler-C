@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <curl/curl.h> // libcurl: HTTP client library for downloading web pages
 
 #define MAX_URLS 100         // Maximum number of URLs to process
 #define MAX_URL_LENGTH 2048  // Max length for each URL string
@@ -30,6 +31,22 @@ char* my_strdup(const char* src)
 int is_valid_url(const char* url) 
 {
     return strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0;
+}
+
+/**
+ * write_data
+ *
+ * libcurl write callback: writes 'size * nmemb' bytes from ptr into stream.
+ *
+ * @param ptr    Pointer to the incoming data buffer.
+ * @param size   Size of each data element (in bytes).
+ * @param nmemb  Number of elements in the data buffer.
+ * @param stream FILE* to which data should be written.
+ * @return       Number of bytes successfully written.
+ */
+size_t write_data(void* ptr, size_t size, size_t nmemb, void* stream) {
+    // fwrite writes nmemb elements of size 'size' from ptr into our FILE*
+    return fwrite(ptr, size, nmemb, (FILE*)stream);
 }
 
 
@@ -61,7 +78,7 @@ void read_urls(const char* filename)
 
     char buffer[MAX_URL_LENGTH];
     while (fgets(buffer, sizeof(buffer), file) && url_count < MAX_URLS) {
-        buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+        buffer[strcspn(buffer, "\r\n")] = '\0'; // Remove newline
 
         if (is_valid_url(buffer)) {
             urls[url_count] = my_strdup(buffer);
@@ -81,6 +98,66 @@ void read_urls(const char* filename)
     }
 }
 
+/**
+ * fetch_html
+ *
+ * Downloads the HTML content of the given URL and saves it to "page<index>.html".
+ *
+ * Steps:
+ *  1. Initialize a CURL handle.
+ *  2. Construct an output filename using the thread’s index.
+ *  3. Open the file for writing.
+ *  4. Configure libcurl to fetch the URL and write via write_data().
+ *  5. Perform the HTTP GET request.
+ *  6. Report any errors or confirm success.
+ *  7. Clean up resources.
+ *
+ * @param url    The web address to download.
+ * @param index  Numeric identifier used to name the output file.
+ */
+void fetch_html(const char* url, int index) {
+    // 1) Start libcurl
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        fprintf(stderr, "[ERROR] curl init failed (out of memory?)\n");
+        return;
+    }
+
+    // 2) Prepare a filename for this page
+    char filename[64];
+    snprintf(filename, sizeof(filename), "page%d.html", index);
+
+    // 3) Open the file for writing the HTML
+    FILE* fp = fopen(filename, "w");
+    if (!fp) {
+        fprintf(stderr, "[ERROR] cannot open %s for writing\n", filename);
+        curl_easy_cleanup(curl);
+        return;
+    }
+
+    // 4) Configure curl:
+    curl_easy_setopt(curl, CURLOPT_URL, url);               // which web page
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data); // writer callback
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);           // file to write into
+
+    // 5) Actually perform the HTTP GET
+    CURLcode res = curl_easy_perform(curl);
+
+    // 6) Check result
+    if (res != CURLE_OK) {
+        fprintf(stderr,
+                "[ERROR] download failed for %s: %s\n",
+                url,
+                curl_easy_strerror(res)); // human-readable error
+    } else {
+        printf("[INFO] Saved HTML to %s\n", filename);
+    }
+
+    // 7) Clean up
+    fclose(fp);
+    curl_easy_cleanup(curl);
+}
+
 /*
  * Thread function that processes a single URL.
  * Logs the URL being handled, and calls fetch_html() to process it.
@@ -92,8 +169,8 @@ void* thread_worker(void* arg)
     // Logging: Show which thread is starting and what URL it's working on
     printf("[INFO] Thread %d: Handling URL: %s\n", data->index, data->url);
 
-    // Placeholder for teammate's HTML fetching function(Just a example)
-    // Example: fetch_html(data->url, data->index);
+    // Fetch the page and save it to page<index>.html
+    fetch_html(data->url, data->index);
 
     // Logging: Thread is done
     printf("[INFO] Thread %d: Finished processing.\n", data->index);
@@ -109,8 +186,11 @@ void* thread_worker(void* arg)
  *  - Creates one thread per URL
  *  - Waits for all threads to complete
  */
-int main() 
+int main(void) 
 {
+    // Prepare libcurl for use across all threads
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
     // Logging: Indicate program started
     printf("[INFO] Web Crawler started.\n");
 
@@ -156,6 +236,9 @@ int main()
 
     // Logging: Crawler finished
     printf("[INFO] Web Crawler finished. All threads completed.\n");
+    
+    // Clean up any global resources allocated by libcurl
+    curl_global_cleanup();
 
     return 0;
 }

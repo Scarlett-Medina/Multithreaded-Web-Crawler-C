@@ -303,7 +303,7 @@ const char wordCounter(const char filepath[])
     //close dir after while of readdir is finished
     closedir(dirp);
     //output
-    printf("[INFO] Word count of linux, science, code, libcurl, and kernel");
+    printf("[INFO] Word count of linux, science, code, libcurl, and kernel\n");
     for(int i = 0; i<5; i++)
     {
         printf("[INFO] %s: %d\n", words[i], count[i]);

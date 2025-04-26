@@ -28,6 +28,12 @@ Lucia - HTML Fetching & Storage
 - Implement a `write_data` callback to stream downloads directly to disk.  
 - Log success (`[INFO]`) or failure (`[ERROR]`) for each download.
 
+Dillon - Word Counting & Output
++ Use file opening to get the html of page1, page2, and page3
++ Use fgetc to build current string
++ Compare current string with word list of linux, science, code, libcurl, and kernel
++ Add 1 to count for respective word and display final count at end of main run
+
 ## Project Files
 
 | File          | Description                                  |
